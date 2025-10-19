@@ -9,9 +9,11 @@ val ZeroA = Color(0, 0, 0, 0)
 
 val White = Color(255, 255, 255, 255)
 val Grey231 = Color(231, 231, 231, 255)
+val Grey206 = Color(206, 206, 206, 255)
 
 val Green198 = Color(0, 198, 142, 255)
 val Green82 = Color(0, 82, 58, 255)
+val Green52 = Color(0, 52, 35, 255)
 
 val Red222 = Color(222, 42, 101, 255)
 
