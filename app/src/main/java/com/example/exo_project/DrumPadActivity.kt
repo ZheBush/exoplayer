@@ -6,9 +6,9 @@ import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,12 +17,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -31,10 +31,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconToggleButton
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -48,6 +46,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -59,7 +61,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import com.example.exo_project.ui.theme.Green198
 import com.example.exo_project.ui.theme.Green52
 import com.example.exo_project.ui.theme.Green82
-import com.example.exo_project.ui.theme.Grey206
+import com.example.exo_project.ui.theme.Grey168
 import com.example.exo_project.ui.theme.Grey224
 import com.example.exo_project.ui.theme.Red222
 import kotlinx.coroutines.delay
@@ -89,8 +91,10 @@ fun DrumPad(
     modifier: Modifier = Modifier
 ) {
     val tactCount = 30
+    val temp = 140F
+    val timeSignature = 4
     var isSoundPlay by remember { mutableStateOf(false) }
-    val soloLineList = remember { mutableStateListOf(false, false) }
+    val soundList = remember { mutableStateListOf<DrumLineClass>() }
     Row(
         modifier = Modifier
             .fillMaxSize()
@@ -101,7 +105,41 @@ fun DrumPad(
                 .fillMaxHeight()
                 .width(200.dp)
                 .background(Green82)
-        ) {  }
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(40.dp)
+            ) { }
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                LazyColumn {
+                    itemsIndexed(soundList) { index, item ->
+
+                    }
+                }
+                Box(
+                    modifier = Modifier
+                        .padding(10.dp)
+                        .fillMaxWidth()
+                        .height(30.dp)
+                        .background(
+                            color = Green52,
+                            shape = RoundedCornerShape(5.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "+",
+                        fontWeight = FontWeight(300),
+                        fontSize = 16.sp,
+                        color = Grey224
+                    )
+                }
+            }
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -138,26 +176,24 @@ fun DrumPad(
                     .fillMaxSize()
                     .background(Grey224)
                     .padding(top = 5.dp)
+//                    .clickable(
+//                        soundList.add(
+//                            DrumLine(
+//
+//                            )
+//                        )
+//                    )
             ) {
-                Column {
-                    DrumLine(
-                        sound = R.raw.wiz_khalifa_snare_3,
-                        tactCount = tactCount,
-                        isSoundPlay = isSoundPlay,
-                        temp = 140F,
-                        timeSignature = 4,
-                        soloLineList = soloLineList,
-                        indexInSoloList = 0
-                    )
-                    DrumLine(
-                        sound = R.raw.wiz_khalifa_snare_14,
-                        tactCount = tactCount,
-                        isSoundPlay = isSoundPlay,
-                        temp = 140F,
-                        timeSignature = 4,
-                        soloLineList = soloLineList,
-                        indexInSoloList = 1
-                    )
+                LazyColumn {
+                    itemsIndexed(soundList) { index, item ->
+                        DrumLine(
+                            item = item,
+                            tactCount = tactCount,
+                            isSoundPlay = isSoundPlay,
+                            temp = temp,
+                            timeSignature = timeSignature
+                        )
+                    }
                 }
             }
         }
@@ -166,13 +202,11 @@ fun DrumPad(
 
 @Composable
 fun DrumLine(
-    sound: Int,
+    item: DrumLineClass,
     tactCount: Int,
     isSoundPlay: Boolean,
     temp: Float,
     timeSignature: Int,
-    soloLineList: MutableList<Boolean>,
-    indexInSoloList: Int
 ) {
     var count by remember { mutableIntStateOf(0) }
     val tactDuration = (60 / temp / timeSignature * 1000).toLong()
@@ -185,34 +219,34 @@ fun DrumLine(
             }
         }
     }
-    val soundList = remember {
-        mutableStateListOf(
-            false, false, false, false, false, false, false, false, false, false,
-            false, false, false, false, false, false, false, false, false, false,
-            false, false, false, false, false, false, false, false, false, false
-        )
-    }
+    val lazyState = rememberLazyListState()
     val context = LocalContext.current
+    val isPreview = LocalInspectionMode.current
     val exoPlayer = remember {
-        ExoPlayer.Builder(context).build().apply {
-            setAudioAttributes(
-                androidx.media3.common.AudioAttributes.Builder()
-                    .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
-                    .setUsage(C.USAGE_MEDIA)
-                    .build(),
-                true
-            )
+        if (isPreview) {
+            null
+        }
+        else {
+            ExoPlayer.Builder(context).build().apply {
+                setAudioAttributes(
+                    androidx.media3.common.AudioAttributes.Builder()
+                        .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
+                        .setUsage(C.USAGE_MEDIA)
+                        .build(),
+                    true
+                )
+            }
         }
     }
     LaunchedEffect(Unit) {
-        val rawUri = "android.resource://${context.packageName}/$sound"
+        val rawUri = "android.resource://${context.packageName}/${item.resIndex}"
         val mediaItem = MediaItem.fromUri(rawUri)
-        exoPlayer.setMediaItem(mediaItem)
-        exoPlayer.prepare()
+        exoPlayer?.setMediaItem(mediaItem)
+        exoPlayer?.prepare()
     }
     DisposableEffect(Unit) {
         onDispose {
-            exoPlayer.release()
+            exoPlayer?.release()
         }
     }
     Row(
@@ -228,33 +262,34 @@ fun DrumLine(
                     start = 15.dp
                 )
                 .selectable(
-                    selected = soloLineList[indexInSoloList],
-                    onClick = { soloLineList[indexInSoloList] = !soloLineList[indexInSoloList] }
+                    selected = item.isSolo,
+                    onClick = { item.isSolo = !item.isSolo }
                 ),
             text = "S",
-            textDecoration = if (soloLineList[indexInSoloList]) TextDecoration.Underline else TextDecoration.None,
+            textDecoration = if (item.isSolo) TextDecoration.Underline else TextDecoration.None,
             fontSize = 18.sp,
-            color = Green82)
+            color = if (item.isSolo) Green198 else Green82)
         LazyRow(
+            state = lazyState,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 5.dp)
         ) {
-            itemsIndexed(soundList) { index, item ->
+            itemsIndexed(item.tactList) { index, i ->
                 Box(
                     modifier = Modifier
                         .padding(start = if (index == 0) 10.dp else 0.dp)
                         .fillMaxHeight()
                         .width(25.dp)
                         .background(
-                            if (isSoundPlay && index == count) Grey206 else Grey224,
+                            if (isSoundPlay && index == count) Grey168 else Grey224,
                             shape = RoundedCornerShape(5.dp)
                         ),
                     contentAlignment = Alignment.TopCenter
                 ) {
                     Box(
                         modifier = Modifier
-                            .padding(top = 3.dp)
+                            .padding(vertical = 3.dp)
                             .shadow(
                                 elevation = 1.dp,
                                 shape = RoundedCornerShape(5.dp)
@@ -267,14 +302,14 @@ fun DrumLine(
                             .width(20.dp)
                             .height(35.dp)
                             .background(
-                                if (soundList[index]) Green198 else {
+                                if (item.tactList[index]) Green198 else {
                                     if (index % 8 < 4) Green82
                                     else Green52
                                 }
                             )
                             .selectable(
-                                selected = item,
-                                onClick = { soundList[index] = !item })
+                                selected = i,
+                                onClick = { item.tactList[index] = !item.tactList[index] })
                     )
                 }
             }
