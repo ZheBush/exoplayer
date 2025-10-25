@@ -11,6 +11,7 @@ val White = Color(255, 255, 255, 255)
 val Grey224 = Color(224, 224, 224, 255)
 val Grey206 = Color(206, 206, 206, 255)
 val Grey168 = Color(168, 168, 168, 255)
+val Black = Color(0, 0, 0)
 
 val Green198 = Color(0, 198, 142, 255)
 val Green82 = Color(0, 82, 58, 255)

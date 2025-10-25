@@ -1,5 +1,6 @@
 package com.example.exo_project
 
+import android.content.Context
 import android.content.pm.ActivityInfo
 import android.os.Bundle
 import android.view.View
@@ -9,6 +10,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,7 +18,9 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -26,10 +30,13 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -47,23 +54,29 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.core.view.WindowCompat
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
+import com.example.exo_project.ui.theme.Black
 import com.example.exo_project.ui.theme.Green198
 import com.example.exo_project.ui.theme.Green52
 import com.example.exo_project.ui.theme.Green82
 import com.example.exo_project.ui.theme.Grey168
 import com.example.exo_project.ui.theme.Grey224
 import com.example.exo_project.ui.theme.Red222
+import com.example.exo_project.waveform.Waveform
+import com.example.exo_project.waveform.WaveformVisualizer
+import com.example.exo_project.waveform.parseWavData
+import com.example.exo_project.waveform.readAudioData
 import kotlinx.coroutines.delay
 
 @Suppress("DEPRECATION")
@@ -80,7 +93,8 @@ class DrumPadActivity : ComponentActivity() {
                 )
         setContent {
             Scaffold { innerPadding ->
-                DrumPad(modifier = Modifier.padding(innerPadding))
+                DrumPadPreview()
+//                DrumPad(modifier = Modifier.padding(innerPadding))
             }
         }
     }
@@ -94,12 +108,30 @@ fun DrumPad(
     val temp = 140F
     val timeSignature = 4
     var isSoundPlay by remember { mutableStateOf(false) }
+    var isAddLineWindowOpen by remember { mutableStateOf(true) }
     val soundList = remember { mutableStateListOf<DrumLineClass>() }
+    if (isAddLineWindowOpen) {
+        Dialog(
+            properties = DialogProperties(usePlatformDefaultWidth = false),
+            onDismissRequest = { isAddLineWindowOpen = false }
+        ) {
+            Box(
+                modifier = Modifier
+                    .height(300.dp)
+                    .width(600.dp)
+                    .background(
+                        color = Grey224,
+                        shape = RoundedCornerShape(5.dp))
+            ) {
+
+            }
+        }
+    }
     Row(
         modifier = Modifier
             .fillMaxSize()
             .background(Green82)
-    ) {
+        ) {
         Column(
             modifier = Modifier
                 .fillMaxHeight()
@@ -117,12 +149,15 @@ fun DrumPad(
             ) {
                 LazyColumn {
                     itemsIndexed(soundList) { index, item ->
-
                     }
                 }
                 Box(
                     modifier = Modifier
-                        .padding(10.dp)
+                        .padding(
+                            start = 10.dp,
+                            end = 10.dp,
+                            bottom = 5.dp
+                        )
                         .fillMaxWidth()
                         .height(30.dp)
                         .background(
@@ -176,13 +211,7 @@ fun DrumPad(
                     .fillMaxSize()
                     .background(Grey224)
                     .padding(top = 5.dp)
-//                    .clickable(
-//                        soundList.add(
-//                            DrumLine(
-//
-//                            )
-//                        )
-//                    )
+                    .clickable(onClick = { isAddLineWindowOpen = true })
             ) {
                 LazyColumn {
                     itemsIndexed(soundList) { index, item ->
@@ -317,11 +346,183 @@ fun DrumLine(
     }
 }
 
+fun getRawFiles(context: Context): List<RawFile> {
+    return try {
+        val resources = context.resources
+        val packageName = context.packageName
+        val field = R.raw::class.java.fields
+        field.map { field ->
+            val id = field.getInt(R.raw::class.java)
+            val name = resources.getResourceEntryName(id)
+            RawFile(
+                id = id,
+                name = name
+            )
+        }
+    }
+    catch (e: Exception) {
+        emptyList()
+    }
+}
+
 @Preview(
     showBackground = true,
     device = "spec: width=411dp, height=891dp, orientation=landscape"
 )
 @Composable
 fun DrumPadPreview() {
-    DrumPad()
+    Box(
+        modifier = Modifier.fillMaxSize().background(Black.copy(alpha = 0.5f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier
+                .height(300.dp)
+                .width(600.dp)
+                .background(
+                    color = Grey224,
+                    shape = RoundedCornerShape(5.dp)),
+            verticalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Text(
+                modifier = Modifier.padding(
+                    top = 16.dp,
+                    start = 16.dp
+                ),
+                text = "Add Sound",
+                fontSize = 18.sp,
+                fontWeight = FontWeight(350),
+                color = Green82
+            )
+            Column(
+                modifier = Modifier
+                    .padding(
+                        vertical = 8.dp,
+                        horizontal = 16.dp
+                    )
+                    .height(210.dp)
+                    .fillMaxWidth()
+            ) {
+                var expanded by remember { mutableStateOf(false) }
+                var selectedFile by remember { mutableStateOf<RawFile?>(null) }
+                val context = LocalContext.current
+                val rawList = remember { getRawFiles(context) }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = if (selectedFile != null) "The ${selectedFile!!.name} is currently selected"
+                            else "There is no file here right now. You can add a new one",
+                        fontWeight = FontWeight(300)
+                    )
+                    IconButton(
+                        modifier = Modifier
+                            .padding(start = 2.dp)
+                            .size(22.dp),
+                        onClick = { expanded = true }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.KeyboardArrowDown,
+                            contentDescription = "choose file",
+                            tint = Green82
+                        )
+                    }
+                }
+                DropdownMenu(
+                    modifier = Modifier.heightIn(max = 200.dp),
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false },
+                    offset = DpOffset(
+                        x = 295.dp,
+                        y = 125.dp
+                    )
+                ) {
+                    if (rawList.isEmpty()) {
+                        DropdownMenuItem(
+                            onClick = { expanded = false },
+                            text = {
+                                Text("There are no files here")
+                            }
+                        )
+                    }
+                    else {
+                        rawList.forEach { file ->
+                            DropdownMenuItem(
+                                onClick = {
+                                    expanded = false
+                                    selectedFile = file
+                                },
+                                text = {
+                                    Text(file.name)
+                                }
+                            )
+                        }
+                    }
+                }
+                if (selectedFile != null) {
+                    Column(
+                        modifier = Modifier
+                            .padding(top = 8.dp)
+                            .fillMaxSize()
+                    ) {
+                        var isPlaying by remember { mutableStateOf(false) }
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "You can prelisten the sound",
+                                fontWeight = FontWeight(300)
+                            )
+                            IconButton(
+                                modifier = Modifier
+                                    .padding(start = 2.dp)
+                                    .size(20.dp),
+                                onClick = { isPlaying = !isPlaying }
+                            ) {
+                                Icon(
+                                    imageVector = if (!isPlaying) Icons.Filled.PlayArrow else Icons.Filled.Close,
+                                    contentDescription = "prelisten sound",
+                                    tint = Green82
+                                )
+                            }
+                        }
+                        val inputStream = context.resources.openRawResource(selectedFile!!.id)
+                        val wavBytes = readAudioData(inputStream)
+                        WaveformVisualizer(wavBytes, isPlaying)
+                    }
+                }
+            }
+            Row(
+                modifier = Modifier
+                    .padding(
+                        start = 16.dp,
+                        end = 16.dp,
+                        bottom = 8.dp
+                    )
+                    .fillMaxSize(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.End
+            ) {
+                IconButton(
+                    onClick = {}
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Done,
+                        contentDescription = "add",
+                        tint = Green82
+                    )
+                }
+                IconButton(
+                    onClick = {}
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Close,
+                        contentDescription = "add",
+                        tint = Green82
+                    )
+                }
+            }
+        }
+    }
+//    DrumPad()
 }
