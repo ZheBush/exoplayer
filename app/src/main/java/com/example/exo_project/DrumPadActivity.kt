@@ -3,10 +3,13 @@ package com.example.exo_project
 import android.content.Context
 import android.content.pm.ActivityInfo
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -44,6 +47,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -74,7 +78,6 @@ import com.example.exo_project.ui.theme.Grey168
 import com.example.exo_project.ui.theme.Grey224
 import com.example.exo_project.ui.theme.Red222
 import com.example.exo_project.waveform.Waveform
-import com.example.exo_project.waveform.WaveformVisualizer
 import com.example.exo_project.waveform.parseWavData
 import com.example.exo_project.waveform.readAudioData
 import kotlinx.coroutines.delay
@@ -121,7 +124,8 @@ fun DrumPad(
                     .width(600.dp)
                     .background(
                         color = Grey224,
-                        shape = RoundedCornerShape(5.dp))
+                        shape = RoundedCornerShape(5.dp)
+                    )
             ) {
 
             }
@@ -372,7 +376,9 @@ fun getRawFiles(context: Context): List<RawFile> {
 @Composable
 fun DrumPadPreview() {
     Box(
-        modifier = Modifier.fillMaxSize().background(Black.copy(alpha = 0.5f)),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Black.copy(alpha = 0.5f)),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -381,7 +387,8 @@ fun DrumPadPreview() {
                 .width(600.dp)
                 .background(
                     color = Grey224,
-                    shape = RoundedCornerShape(5.dp)),
+                    shape = RoundedCornerShape(5.dp)
+                ),
             verticalArrangement = Arrangement.SpaceEvenly
         ) {
             Text(
@@ -488,7 +495,51 @@ fun DrumPadPreview() {
                         }
                         val inputStream = context.resources.openRawResource(selectedFile!!.id)
                         val wavBytes = readAudioData(inputStream)
-                        WaveformVisualizer(wavBytes, isPlaying)
+                        val waveformData = remember(wavBytes) {
+                            parseWavData(
+                                wavBytes = wavBytes,
+                                channels = 2,
+                                samples = 2000
+                            )
+                        }
+                        var progress by remember { mutableFloatStateOf(0f) }
+                        var colorProgress by remember { mutableFloatStateOf(0.1f) }
+                        val animatedProgress by animateFloatAsState(
+                            targetValue = progress,
+                            animationSpec = tween(durationMillis = 16),
+                            label = "progressAnimation"
+                        )
+                        val animatedColorProgress by animateFloatAsState(
+                            targetValue = colorProgress,
+                            animationSpec = tween(durationMillis = 16),
+                            label = "progressColor"
+                        )
+                        LaunchedEffect(isPlaying) {
+                            while (isPlaying && progress < 1f && colorProgress > 0f) {
+                                delay(16)
+                                progress += 0.05f
+                                if (progress >= 1f) {
+                                    while (colorProgress > 0f) {
+                                        delay(16)
+                                        colorProgress -= 0.01f
+                                        if (colorProgress <= 0f) {
+                                            break
+                                        }
+                                    }
+                                }
+                            }
+                            if (progress >= 1f) {
+                                progress = 0f
+                            }
+                            colorProgress = 0.1f
+                            isPlaying = false
+                        }
+                        Waveform(
+                            amplitudes = waveformData.amplitudes,
+                            isPlaying = isPlaying,
+                            progress = animatedProgress,
+                            colorProgress = animatedColorProgress
+                        )
                     }
                 }
             }

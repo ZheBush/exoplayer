@@ -15,7 +15,7 @@ fun readAudioData(inputStream: InputStream): ByteArray {
     return inputStream.use { it.readBytes() }
 }
 
-fun parseWavData(wavBytes: ByteArray): WaveformData {
+fun parseWavData(wavBytes: ByteArray, samples: Int, channels: Int): WaveformData {
 
     val sampleRate = (wavBytes[24].toInt() and 0xFF) or
             (wavBytes[25].toInt() and 0xFF shl 8) or
@@ -25,14 +25,12 @@ fun parseWavData(wavBytes: ByteArray): WaveformData {
 //    val channels = (wavBytes[22].toInt() and 0xFF) or
 //            (wavBytes[23].toInt() and 0xFF shl 8)
 
-    val channels = 2
-
     val bitsPerSample = (wavBytes[34].toInt() and 0xFF) or
             (wavBytes[35].toInt() and 0xFF shl 8)
 
     val dataStart = findDataChunk(wavBytes)
     val audioData = wavBytes.copyOfRange(dataStart, wavBytes.size)
-    val amplitudes = decodeAmplitudes(audioData, channels, 1000)
+    val amplitudes = decodeAmplitudes(audioData, channels, samples)
 
     return WaveformData(amplitudes, sampleRate, channels, bitsPerSample)
 }
