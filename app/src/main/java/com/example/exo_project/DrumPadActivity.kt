@@ -70,6 +70,9 @@ import androidx.core.view.WindowCompat
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
+import com.example.exo_project.exo.createExoPlayer
+import com.example.exo_project.exo.getWavDuration
+import com.example.exo_project.exo.playSound
 import com.example.exo_project.ui.theme.Black
 import com.example.exo_project.ui.theme.Green198
 import com.example.exo_project.ui.theme.Green52
@@ -472,7 +475,17 @@ fun DrumPadPreview() {
                             .padding(top = 8.dp)
                             .fillMaxSize()
                     ) {
+
                         var isPlaying by remember { mutableStateOf(false) }
+                        var duration by remember { mutableStateOf<Long?>(0L) }
+                        val exoPlayer = remember { createExoPlayer(context) }
+
+                        DisposableEffect(Unit) {
+                            onDispose {
+                                exoPlayer.release()
+                            }
+                        }
+
                         Row(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -484,7 +497,10 @@ fun DrumPadPreview() {
                                 modifier = Modifier
                                     .padding(start = 2.dp)
                                     .size(20.dp),
-                                onClick = { isPlaying = !isPlaying }
+                                onClick = {
+                                    isPlaying = !isPlaying
+                                    playSound(exoPlayer, context, selectedFile!!.id)
+                                }
                             ) {
                                 Icon(
                                     imageVector = if (!isPlaying) Icons.Filled.PlayArrow else Icons.Filled.Close,
@@ -493,6 +509,7 @@ fun DrumPadPreview() {
                                 )
                             }
                         }
+
                         val inputStream = context.resources.openRawResource(selectedFile!!.id)
                         val wavBytes = readAudioData(inputStream)
                         val waveformData = remember(wavBytes) {
@@ -502,6 +519,7 @@ fun DrumPadPreview() {
                                 samples = 2000
                             )
                         }
+
                         var progress by remember { mutableFloatStateOf(0f) }
                         var colorProgress by remember { mutableFloatStateOf(0.1f) }
                         val animatedProgress by animateFloatAsState(
@@ -514,14 +532,25 @@ fun DrumPadPreview() {
                             animationSpec = tween(durationMillis = 16),
                             label = "progressColor"
                         )
+
+                        LaunchedEffect(selectedFile!!.id) {
+                            duration = getWavDuration(context, selectedFile!!.id)
+                        }
+
+                        LaunchedEffect(selectedFile?.id) {
+                            progress = 0f
+                            colorProgress = 0.1f
+                            isPlaying = false
+                        }
+
                         LaunchedEffect(isPlaying) {
                             while (isPlaying && progress < 1f && colorProgress > 0f) {
                                 delay(16)
-                                progress += 0.05f
+                                progress += 1f / duration!! * 16
                                 if (progress >= 1f) {
                                     while (colorProgress > 0f) {
                                         delay(16)
-                                        colorProgress -= 0.01f
+                                        colorProgress -= 0.008f
                                         if (colorProgress <= 0f) {
                                             break
                                         }

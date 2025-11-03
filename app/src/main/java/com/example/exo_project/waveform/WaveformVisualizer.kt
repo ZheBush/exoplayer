@@ -50,7 +50,7 @@ private fun DrawScope.drawWaveformLine(
 
     for (i in 1 until amplitudes.size) {
         val x = i * pointWidth
-        val y = centerY + amplitudes[i] * height * 0.4f
+        val y = centerY + amplitudes[i] * height * 0.2f
         path.lineTo(x, y)
     }
 
@@ -58,7 +58,7 @@ private fun DrawScope.drawWaveformLine(
         path = path,
         color = Green82,
         style = Stroke(
-            width = 2f,
+            width = 1.5f,
             cap = StrokeCap.Round,
             join = StrokeJoin.Round
         )
