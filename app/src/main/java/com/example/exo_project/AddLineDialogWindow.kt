@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -61,6 +62,7 @@ import com.example.exo_project.ui.theme.Green198
 import com.example.exo_project.ui.theme.Green52
 import com.example.exo_project.ui.theme.Green82
 import com.example.exo_project.ui.theme.Grey168
+import com.example.exo_project.ui.theme.Grey206
 import com.example.exo_project.ui.theme.Grey224
 import com.example.exo_project.waveform.Waveform
 import com.example.exo_project.waveform.createExoPlayer
@@ -83,7 +85,7 @@ fun AddLineDialogWindow(
             var expanded by remember { mutableStateOf(false) }
             var selectedFile by remember { mutableStateOf<RawFileClass?>(null) }
             val dynamicHeight = remember { derivedStateOf { if (selectedFile == null) 310.dp else 500.dp } }
-            var sliderPosition by remember{ mutableFloatStateOf(0f) }
+            val sliderPosition = remember { mutableFloatStateOf(0f) }
             val context = LocalContext.current
             val rawList = remember { getRawFiles(context) }
             Surface(
@@ -292,24 +294,7 @@ fun AddLineDialogWindow(
                                         }
                                     }
                                     Spacer(modifier = Modifier.height(40.dp))
-                                    Column(
-                                        modifier = Modifier
-                                            .fillMaxHeight()
-                                            .width(200.dp)
-                                            .rotate(270f),
-                                        verticalArrangement = Arrangement.SpaceEvenly
-                                    ) {
-                                        Slider(
-                                            value = sliderPosition,
-                                            onValueChange = { sliderPosition = it },
-                                            colors = SliderDefaults.colors(
-                                                inactiveTrackColor = Grey168,
-                                                activeTrackColor = Green52,
-                                                thumbColor = Green82,
-                                            ),
-                                            modifier = Modifier.width(150.dp)
-                                        )
-                                    }
+//                                    EqualizerWindow(sliderPosition)
                                 }
                             }
                         }

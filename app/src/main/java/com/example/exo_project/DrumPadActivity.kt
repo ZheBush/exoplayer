@@ -38,6 +38,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -82,7 +83,19 @@ class DrumPadActivity : ComponentActivity() {
                 )
         setContent {
             Scaffold { innerPadding ->
-                DrumPad(modifier = Modifier.padding(innerPadding))
+//                DrumPad(modifier = Modifier.padding(innerPadding))
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    EqualizerWindow(
+                        listOf(
+                            remember { mutableFloatStateOf(0f) },
+                            remember { mutableFloatStateOf(0f) },
+                            remember { mutableFloatStateOf(0f) },
+                        )
+                    )
+                }
             }
         }
     }
