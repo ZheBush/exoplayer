@@ -17,17 +17,14 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
@@ -36,7 +33,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -101,16 +97,9 @@ fun DrumPad(
     val temp = 140F
     val timeSignature = 4
     var isSoundPlay by remember { mutableStateOf(false) }
-    var isAddLineWindowOpen by remember { mutableStateOf(false) }
+    val isAddLineWindowOpen = remember { mutableStateOf(false) }
     val soundList = remember { mutableStateListOf<DrumLineClass>() }
-    if (isAddLineWindowOpen) {
-        BasicAlertDialog(
-            onDismissRequest = { isAddLineWindowOpen = false },
-            properties = DialogProperties(usePlatformDefaultWidth = false)
-        ) {
-            AddLine()
-        }
-    }
+    AddLineDialogWindow(isAddLineWindowOpen)
     Row(
         modifier = Modifier
             .fillMaxSize()
@@ -150,7 +139,7 @@ fun DrumPad(
                             shape = RoundedCornerShape(5.dp)
                         )
                         .clickable(
-                            onClick = {isAddLineWindowOpen = true}
+                            onClick = {isAddLineWindowOpen.value = true}
                         ),
                     contentAlignment = Alignment.Center
                 ) {
@@ -199,7 +188,7 @@ fun DrumPad(
                     .fillMaxSize()
                     .background(Grey224)
                     .padding(top = 5.dp)
-                    .clickable(onClick = { isAddLineWindowOpen = true })
+                    .clickable(onClick = { isAddLineWindowOpen.value = true })
             ) {
                 LazyColumn {
                     itemsIndexed(soundList) { index, item ->
