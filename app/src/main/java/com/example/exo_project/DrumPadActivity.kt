@@ -3,17 +3,13 @@ package com.example.exo_project
 import android.content.Context
 import android.content.pm.ActivityInfo
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,31 +19,29 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Done
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.BasicAlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -61,28 +55,21 @@ import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.view.WindowCompat
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
-import com.example.exo_project.exo.createExoPlayer
-import com.example.exo_project.exo.getWavDuration
-import com.example.exo_project.exo.playSound
-import com.example.exo_project.ui.theme.Black
+import com.example.exo_project.classes.DrumLineClass
+import com.example.exo_project.classes.RawFileClass
 import com.example.exo_project.ui.theme.Green198
 import com.example.exo_project.ui.theme.Green52
 import com.example.exo_project.ui.theme.Green82
 import com.example.exo_project.ui.theme.Grey168
 import com.example.exo_project.ui.theme.Grey224
 import com.example.exo_project.ui.theme.Red222
-import com.example.exo_project.waveform.Waveform
-import com.example.exo_project.waveform.parseWavData
-import com.example.exo_project.waveform.readAudioData
 import kotlinx.coroutines.delay
 
 @Suppress("DEPRECATION")
@@ -99,13 +86,13 @@ class DrumPadActivity : ComponentActivity() {
                 )
         setContent {
             Scaffold { innerPadding ->
-                DrumPadPreview()
-//                DrumPad(modifier = Modifier.padding(innerPadding))
+                DrumPad(modifier = Modifier.padding(innerPadding))
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DrumPad(
     modifier: Modifier = Modifier
@@ -114,24 +101,14 @@ fun DrumPad(
     val temp = 140F
     val timeSignature = 4
     var isSoundPlay by remember { mutableStateOf(false) }
-    var isAddLineWindowOpen by remember { mutableStateOf(true) }
+    var isAddLineWindowOpen by remember { mutableStateOf(false) }
     val soundList = remember { mutableStateListOf<DrumLineClass>() }
     if (isAddLineWindowOpen) {
-        Dialog(
-            properties = DialogProperties(usePlatformDefaultWidth = false),
-            onDismissRequest = { isAddLineWindowOpen = false }
+        BasicAlertDialog(
+            onDismissRequest = { isAddLineWindowOpen = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false)
         ) {
-            Box(
-                modifier = Modifier
-                    .height(300.dp)
-                    .width(600.dp)
-                    .background(
-                        color = Grey224,
-                        shape = RoundedCornerShape(5.dp)
-                    )
-            ) {
-
-            }
+            AddLine()
         }
     }
     Row(
@@ -156,6 +133,7 @@ fun DrumPad(
             ) {
                 LazyColumn {
                     itemsIndexed(soundList) { index, item ->
+
                     }
                 }
                 Box(
@@ -170,6 +148,9 @@ fun DrumPad(
                         .background(
                             color = Green52,
                             shape = RoundedCornerShape(5.dp)
+                        )
+                        .clickable(
+                            onClick = {isAddLineWindowOpen = true}
                         ),
                     contentAlignment = Alignment.Center
                 ) {
@@ -353,7 +334,7 @@ fun DrumLine(
     }
 }
 
-fun getRawFiles(context: Context): List<RawFile> {
+fun getRawFiles(context: Context): List<RawFileClass> {
     return try {
         val resources = context.resources
         val packageName = context.packageName
@@ -361,7 +342,7 @@ fun getRawFiles(context: Context): List<RawFile> {
         field.map { field ->
             val id = field.getInt(R.raw::class.java)
             val name = resources.getResourceEntryName(id)
-            RawFile(
+            RawFileClass(
                 id = id,
                 name = name
             )
@@ -378,231 +359,5 @@ fun getRawFiles(context: Context): List<RawFile> {
 )
 @Composable
 fun DrumPadPreview() {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Black.copy(alpha = 0.5f)),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            modifier = Modifier
-                .height(300.dp)
-                .width(600.dp)
-                .background(
-                    color = Grey224,
-                    shape = RoundedCornerShape(5.dp)
-                ),
-            verticalArrangement = Arrangement.SpaceEvenly
-        ) {
-            Text(
-                modifier = Modifier.padding(
-                    top = 16.dp,
-                    start = 16.dp
-                ),
-                text = "Add Sound",
-                fontSize = 18.sp,
-                fontWeight = FontWeight(350),
-                color = Green82
-            )
-            Column(
-                modifier = Modifier
-                    .padding(
-                        vertical = 8.dp,
-                        horizontal = 16.dp
-                    )
-                    .height(210.dp)
-                    .fillMaxWidth()
-            ) {
-                var expanded by remember { mutableStateOf(false) }
-                var selectedFile by remember { mutableStateOf<RawFile?>(null) }
-                val context = LocalContext.current
-                val rawList = remember { getRawFiles(context) }
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = if (selectedFile != null) "The ${selectedFile!!.name} is currently selected"
-                            else "There is no file here right now. You can add a new one",
-                        fontWeight = FontWeight(300)
-                    )
-                    IconButton(
-                        modifier = Modifier
-                            .padding(start = 2.dp)
-                            .size(22.dp),
-                        onClick = { expanded = true }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.KeyboardArrowDown,
-                            contentDescription = "choose file",
-                            tint = Green82
-                        )
-                    }
-                }
-                DropdownMenu(
-                    modifier = Modifier.heightIn(max = 200.dp),
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false },
-                    offset = DpOffset(
-                        x = 295.dp,
-                        y = 125.dp
-                    )
-                ) {
-                    if (rawList.isEmpty()) {
-                        DropdownMenuItem(
-                            onClick = { expanded = false },
-                            text = {
-                                Text("There are no files here")
-                            }
-                        )
-                    }
-                    else {
-                        rawList.forEach { file ->
-                            DropdownMenuItem(
-                                onClick = {
-                                    expanded = false
-                                    selectedFile = file
-                                },
-                                text = {
-                                    Text(file.name)
-                                }
-                            )
-                        }
-                    }
-                }
-                if (selectedFile != null) {
-                    Column(
-                        modifier = Modifier
-                            .padding(top = 8.dp)
-                            .fillMaxSize()
-                    ) {
-
-                        var isPlaying by remember { mutableStateOf(false) }
-                        var duration by remember { mutableStateOf<Long?>(0L) }
-                        val exoPlayer = remember { createExoPlayer(context) }
-
-                        DisposableEffect(Unit) {
-                            onDispose {
-                                exoPlayer.release()
-                            }
-                        }
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "You can prelisten the sound",
-                                fontWeight = FontWeight(300)
-                            )
-                            IconButton(
-                                modifier = Modifier
-                                    .padding(start = 2.dp)
-                                    .size(20.dp),
-                                onClick = {
-                                    isPlaying = !isPlaying
-                                    playSound(exoPlayer, context, selectedFile!!.id)
-                                }
-                            ) {
-                                Icon(
-                                    imageVector = if (!isPlaying) Icons.Filled.PlayArrow else Icons.Filled.Close,
-                                    contentDescription = "prelisten sound",
-                                    tint = Green82
-                                )
-                            }
-                        }
-
-                        val inputStream = context.resources.openRawResource(selectedFile!!.id)
-                        val wavBytes = readAudioData(inputStream)
-                        val waveformData = remember(wavBytes) {
-                            parseWavData(
-                                wavBytes = wavBytes,
-                                channels = 2,
-                                samples = 2000
-                            )
-                        }
-
-                        var progress by remember { mutableFloatStateOf(0f) }
-                        var colorProgress by remember { mutableFloatStateOf(0.1f) }
-                        val animatedProgress by animateFloatAsState(
-                            targetValue = progress,
-                            animationSpec = tween(durationMillis = 16),
-                            label = "progressAnimation"
-                        )
-                        val animatedColorProgress by animateFloatAsState(
-                            targetValue = colorProgress,
-                            animationSpec = tween(durationMillis = 16),
-                            label = "progressColor"
-                        )
-
-                        LaunchedEffect(selectedFile!!.id) {
-                            duration = getWavDuration(context, selectedFile!!.id)
-                        }
-
-                        LaunchedEffect(selectedFile?.id) {
-                            progress = 0f
-                            colorProgress = 0.1f
-                            isPlaying = false
-                        }
-
-                        LaunchedEffect(isPlaying) {
-                            while (isPlaying && progress < 1f && colorProgress > 0f) {
-                                delay(16)
-                                progress += 1f / duration!! * 16
-                                if (progress >= 1f) {
-                                    while (colorProgress > 0f) {
-                                        delay(16)
-                                        colorProgress -= 0.008f
-                                        if (colorProgress <= 0f) {
-                                            break
-                                        }
-                                    }
-                                }
-                            }
-                            if (progress >= 1f) {
-                                progress = 0f
-                            }
-                            colorProgress = 0.1f
-                            isPlaying = false
-                        }
-                        Waveform(
-                            amplitudes = waveformData.amplitudes,
-                            isPlaying = isPlaying,
-                            progress = animatedProgress,
-                            colorProgress = animatedColorProgress
-                        )
-                    }
-                }
-            }
-            Row(
-                modifier = Modifier
-                    .padding(
-                        start = 16.dp,
-                        end = 16.dp,
-                        bottom = 8.dp
-                    )
-                    .fillMaxSize(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.End
-            ) {
-                IconButton(
-                    onClick = {}
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Done,
-                        contentDescription = "add",
-                        tint = Green82
-                    )
-                }
-                IconButton(
-                    onClick = {}
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Close,
-                        contentDescription = "add",
-                        tint = Green82
-                    )
-                }
-            }
-        }
-    }
-//    DrumPad()
+    DrumPad()
 }

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
@@ -19,6 +20,7 @@ fun Waveform(
     amplitudes: List<Float>,
     isPlaying: Boolean,
     progress: Float,
+    color: Color,
     colorProgress: Float
 ) {
     Canvas(modifier = Modifier.fillMaxSize()) {
@@ -31,7 +33,7 @@ fun Waveform(
 
         drawWaveformLine(amplitudes, width, height, centerY)
         if (isPlaying || progress > 0f) {
-            drawProgressIndicator(width, progress, colorProgress)
+            drawProgressIndicator(width, progress, color, colorProgress)
         }
 
     }
@@ -70,12 +72,12 @@ private fun DrawScope.drawWaveformLine(
 
 }
 
-private fun DrawScope.drawProgressIndicator(width: Float, progress: Float, colorProgress: Float) {
+private fun DrawScope.drawProgressIndicator(width: Float, progress: Float, color: Color, colorProgress: Float) {
 
     val progressX = width * progress
 
     drawRect(
-        color = Green198.copy(alpha = colorProgress),
+        color = color.copy(alpha = colorProgress),
         size = Size(progressX, size.height)
     )
 

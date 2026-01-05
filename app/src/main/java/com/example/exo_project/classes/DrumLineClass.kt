@@ -1,4 +1,4 @@
-package com.example.exo_project
+package com.example.exo_project.classes
 
 data class DrumLineClass(
     val title: String,
